@@ -1,0 +1,53 @@
+# =============================================
+# SECURITY - NEVER COMMIT THESE FILES
+# =============================================
+
+# Environment Variables (Contains API Keys & Secrets)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# Build Output
+dist/
+build/
+*.min.js
+*.min.css
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Temporary Files
+*.tmp
+*.temp
+.cache/
+.temp/
+
+# Node Modules
+node_modules/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+*.bak
+*.orig

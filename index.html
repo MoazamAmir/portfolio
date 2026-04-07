@@ -4,11 +4,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <meta name="description" content="Moazam Amir - Professional Flutter Developer Portfolio">
+  <meta name="robots" content="index, follow">
   <title>Moazam Amir — Flutter Developer</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link
     href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap"
     rel="stylesheet">
+  <!-- Secure Configuration -->
+  <script src="config.js"></script>
   <!-- EmailJS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
@@ -1849,7 +1856,8 @@
           <a href="https://github.com/MoazamAmir" target="_blank" class="social-btn"><i class="fab fa-github"></i></a>
           <a href="https://www.linkedin.com/in/moazamamir/" target="_blank" class="social-btn"><i
               class="fab fa-linkedin-in"></i></a>
-          <a href="https://wa.me/923287412859" target="_blank" class="social-btn"><i class="fab fa-whatsapp"></i></a>
+          <a href="https://wa.me/923287412859" target="_blank" rel="noopener noreferrer" class="social-btn"
+            data-whatsapp-link><i class="fab fa-whatsapp"></i></a>
         </div>
       </div>
 
@@ -2228,30 +2236,40 @@
                 class="fab fa-github"></i></a>
             <a href="https://www.linkedin.com/in/moazamamir/" target="_blank" class="contact-social"><i
                 class="fab fa-linkedin-in"></i></a>
-            <a href="https://wa.me/923287412859" target="_blank" class="contact-social"><i
-                class="fab fa-whatsapp"></i></a>
+            <a href="https://wa.me/923287412859" target="_blank" rel="noopener noreferrer" class="contact-social"
+              data-whatsapp-link><i class="fab fa-whatsapp"></i></a>
           </div>
         </div>
         <div class="contact-form reveal">
           <h3>Send a Message</h3>
-          <form id="contactForm">
+          <form id="contactForm" novalidate>
+            <!-- Honeypot: Anti-bot field (hidden from real users) -->
+            <div style="position: absolute; left: -9999px; opacity: 0; height: 0; width: 0; overflow: hidden;"
+              aria-hidden="true">
+              <label for="_honey">Leave this field empty</label>
+              <input type="text" id="_honey" name="_honey" tabindex="-1" autocomplete="off">
+            </div>
             <div class="form-row">
               <div class="form-group">
-                <label>Name</label>
-                <input type="text" name="name" placeholder="John Doe" required>
+                <label for="contactName">Name</label>
+                <input type="text" id="contactName" name="name" placeholder="John Doe" required maxlength="100"
+                  autocomplete="name">
               </div>
               <div class="form-group">
-                <label>Email</label>
-                <input type="email" name="email" placeholder="john@example.com" required>
+                <label for="contactEmail">Email</label>
+                <input type="email" id="contactEmail" name="email" placeholder="john@example.com" required
+                  maxlength="150" autocomplete="email">
               </div>
             </div>
             <div class="form-group">
-              <label>Subject</label>
-              <input type="text" name="title" placeholder="Project Discussion" required>
+              <label for="contactSubject">Subject</label>
+              <input type="text" id="contactSubject" name="title" placeholder="Project Discussion" required
+                maxlength="150">
             </div>
             <div class="form-group">
-              <label>Message</label>
-              <textarea name="message" placeholder="Tell me about your project..." required></textarea>
+              <label for="contactMessage">Message</label>
+              <textarea id="contactMessage" name="message" placeholder="Tell me about your project..." required
+                maxlength="2000"></textarea>
             </div>
             <button type="submit" class="btn-submit" id="submitBtn">
               <span>Send Message</span>
@@ -2349,7 +2367,7 @@
       const subject = f.querySelector('[name="subject"]').value;
       const message = f.querySelector('[name="message"]').value;
       const text = encodeURIComponent(`*New Portfolio Message*\n\n*Name:* ${name}\n*Email:* ${email}\n*Subject:* ${subject}\n\n*Message:* ${message}`);
-      window.open(`https://wa.me/923287412859?text=${text}`, '_blank');
+      window.open(AppConfig.getWhatsAppURL(text), '_blank', 'noopener,noreferrer');
     }
 
     function toggleMenu() {
@@ -2540,64 +2558,148 @@
       });
     });
 
-    // EmailJS Configuration
-    function initEmailJS() {
-      if (typeof emailjs !== 'undefined') {
-        emailjs.init("u1HV_kUGHYld6wtar");
-        console.log('✅ EmailJS initialized successfully');
+    // =============================================
+    // SECURE EMAILJS CONFIGURATION
+    // All keys loaded from config.js (never hardcoded)
+    // =============================================
 
-        // Contact Form Handler
-        document.getElementById('contactForm').addEventListener('submit', function (event) {
-          event.preventDefault();
+    // Rate limiting storage
+    const submissionTimestamps = [];
 
-          const submitBtn = document.getElementById('submitBtn');
-          const formStatus = document.getElementById('formStatus');
-          const form = this;
+    // Input sanitization
+    function sanitizeInput(str) {
+      if (typeof str !== 'string') return '';
+      return str
+        .replace(/[<>]/g, '') // Remove < and >
+        .replace(/javascript:/gi, '') // Remove javascript: protocol
+        .replace(/on\w+=/gi, '') // Remove event handlers
+        .trim()
+        .substring(0, 2000); // Max length
+    }
 
-          // Disable button and show loading state
-          submitBtn.disabled = true;
-          submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-          formStatus.style.display = 'none';
+    // Check rate limiting
+    function isRateLimited() {
+      const now = Date.now();
+      const oneHourAgo = now - (60 * 60 * 1000);
 
-          // Send email using EmailJS
-          emailjs.sendForm('service_tskks4r', 'template_5bw6ed5', form)
-            .then(function (result) {
-              // Success
-              console.log('✅ Email sent successfully:', result.text);
-              formStatus.textContent = '✓ Message sent successfully! I\'ll get back to you soon.';
-              formStatus.style.background = 'rgba(16, 185, 129, 0.1)';
-              formStatus.style.border = '1px solid rgba(16, 185, 129, 0.3)';
-              formStatus.style.color = '#10B981';
-              formStatus.style.display = 'block';
-
-              // Reset form
-              form.reset();
-
-              // Reset button
-              submitBtn.disabled = false;
-              submitBtn.innerHTML = '<span>Send Message</span><i class="fas fa-paper-plane"></i>';
-
-              // Hide status after 5 seconds
-              setTimeout(function () {
-                formStatus.style.display = 'none';
-              }, 5000);
-            }, function (error) {
-              // Error
-              console.error('❌ Failed to send email:', error.text);
-              formStatus.textContent = '✗ Failed to send message. Please try again or contact me directly.';
-              formStatus.style.background = 'rgba(239, 68, 68, 0.1)';
-              formStatus.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-              formStatus.style.color = '#EF4444';
-              formStatus.style.display = 'block';
-
-              // Reset button
-              submitBtn.disabled = false;
-              submitBtn.innerHTML = '<span>Send Message</span><i class="fas fa-paper-plane"></i>';
-            });
-        });
-      } else {
-        console.error('❌ EmailJS library not loaded. Please check your internet connection.');
+      // Remove timestamps older than 1 hour
+      while (submissionTimestamps.length > 0 && submissionTimestamps[0] < oneHourAgo) {
+        submissionTimestamps.shift();
       }
+
+      return submissionTimestamps.length >= 10; // Max 10 per hour
+    }
+
+    // Record submission
+    function recordSubmission() {
+      submissionTimestamps.push(Date.now());
+    }
+
+    function initEmailJS() {
+      if (typeof emailjs === 'undefined') {
+        console.error('❌ EmailJS library not loaded. Check internet connection.');
+        return;
+      }
+
+      if (typeof AppConfig === 'undefined') {
+        console.error('❌ Secure config not loaded. Check config.js file.');
+        return;
+      }
+
+      // Initialize EmailJS with secure config
+      emailjs.init(AppConfig.getEmailJSPublicKey());
+      console.log('%c✅ EmailJS initialized (Secure Mode)', 'color: #10B981; font-weight: bold;');
+
+      // Contact Form Handler with Security
+      document.getElementById('contactForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        const formStatus = document.getElementById('formStatus');
+        const form = this;
+
+        // Security Check 1: Honeypot (bot detection)
+        const honeypot = form.querySelector('input[name="_honey"]');
+        if (honeypot && honeypot.value !== '') {
+          console.warn(' Bot detected! Honeypot triggered.');
+          formStatus.textContent = '✓ Message sent successfully!';
+          formStatus.style.background = 'rgba(16, 185, 129, 0.1)';
+          formStatus.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+          formStatus.style.color = '#10B981';
+          formStatus.style.display = 'block';
+          form.reset();
+          return;
+        }
+
+        // Security Check 2: Rate limiting
+        if (isRateLimited()) {
+          console.warn('⚠️ Rate limit exceeded!');
+          formStatus.textContent = '⚠️ Too many submissions. Please wait before sending again.';
+          formStatus.style.background = 'rgba(245, 158, 11, 0.1)';
+          formStatus.style.border = '1px solid rgba(245, 158, 11, 0.3)';
+          formStatus.style.color = '#F59E0B';
+          formStatus.style.display = 'block';
+          return;
+        }
+
+        // Security Check 3: Sanitize inputs
+        const nameInput = form.querySelector('[name="name"]');
+        const emailInput = form.querySelector('[name="email"]');
+        const titleInput = form.querySelector('[name="title"]');
+        const messageInput = form.querySelector('[name="message"]');
+
+        nameInput.value = sanitizeInput(nameInput.value);
+        emailInput.value = sanitizeInput(emailInput.value);
+        titleInput.value = sanitizeInput(titleInput.value);
+        messageInput.value = sanitizeInput(messageInput.value);
+
+        // Disable button and show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        formStatus.style.display = 'none';
+
+        // Send email using EmailJS with secure config
+        emailjs.sendForm(
+          AppConfig.getEmailJSServiceId(),
+          AppConfig.getEmailJSTemplateId(),
+          form
+        )
+          .then(function (result) {
+            // Success
+            console.log('%c✅ Email sent successfully', 'color: #10B981;');
+            recordSubmission();
+
+            formStatus.textContent = '✓ Message sent successfully! I\'ll get back to you soon.';
+            formStatus.style.background = 'rgba(16, 185, 129, 0.1)';
+            formStatus.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+            formStatus.style.color = '#10B981';
+            formStatus.style.display = 'block';
+
+            // Reset form
+            form.reset();
+
+            // Reset button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Send Message</span><i class="fas fa-paper-plane"></i>';
+
+            // Hide status after 5 seconds
+            setTimeout(function () {
+              formStatus.style.display = 'none';
+            }, 5000);
+          }, function (error) {
+            // Error
+            console.error('%c❌ Failed to send email:', 'color: #EF4444;', error.text);
+            formStatus.textContent = '✗ Failed to send message. Please try again or contact me directly.';
+            formStatus.style.background = 'rgba(239, 68, 68, 0.1)';
+            formStatus.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+            formStatus.style.color = '#EF4444';
+            formStatus.style.display = 'block';
+
+            // Reset button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Send Message</span><i class="fas fa-paper-plane"></i>';
+          });
+      });
     }
 
     // Initialize when DOM is ready
