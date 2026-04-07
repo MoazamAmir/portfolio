@@ -10,7 +10,7 @@
     href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap"
     rel="stylesheet">
   <!-- EmailJS SDK -->
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/emailjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
     *,
     *::before,
@@ -2295,7 +2295,6 @@
     </div>
   </div>
 
-  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
   <script>
     const projects = {
       islam: {
@@ -2540,9 +2539,73 @@
         }, 200);
       });
     });
-  </script>
 
+    // EmailJS Configuration
+    function initEmailJS() {
+      if (typeof emailjs !== 'undefined') {
+        emailjs.init("u1HV_kUGHYld6wtar");
+        console.log('✅ EmailJS initialized successfully');
 
+        // Contact Form Handler
+        document.getElementById('contactForm').addEventListener('submit', function (event) {
+          event.preventDefault();
+
+          const submitBtn = document.getElementById('submitBtn');
+          const formStatus = document.getElementById('formStatus');
+          const form = this;
+
+          // Disable button and show loading state
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+          formStatus.style.display = 'none';
+
+          // Send email using EmailJS
+          emailjs.sendForm('service_tskks4r', 'template_5bw6ed5', form)
+            .then(function (result) {
+              // Success
+              console.log('✅ Email sent successfully:', result.text);
+              formStatus.textContent = '✓ Message sent successfully! I\'ll get back to you soon.';
+              formStatus.style.background = 'rgba(16, 185, 129, 0.1)';
+              formStatus.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+              formStatus.style.color = '#10B981';
+              formStatus.style.display = 'block';
+
+              // Reset form
+              form.reset();
+
+              // Reset button
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = '<span>Send Message</span><i class="fas fa-paper-plane"></i>';
+
+              // Hide status after 5 seconds
+              setTimeout(function () {
+                formStatus.style.display = 'none';
+              }, 5000);
+            }, function (error) {
+              // Error
+              console.error('❌ Failed to send email:', error.text);
+              formStatus.textContent = '✗ Failed to send message. Please try again or contact me directly.';
+              formStatus.style.background = 'rgba(239, 68, 68, 0.1)';
+              formStatus.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+              formStatus.style.color = '#EF4444';
+              formStatus.style.display = 'block';
+
+              // Reset button
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = '<span>Send Message</span><i class="fas fa-paper-plane"></i>';
+            });
+        });
+      } else {
+        console.error('❌ EmailJS library not loaded. Please check your internet connection.');
+      }
+    }
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initEmailJS);
+    } else {
+      initEmailJS();
+    }
   </script>
 </body>
 
